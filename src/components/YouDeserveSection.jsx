@@ -146,7 +146,7 @@ export default function YouDeserveSection() {
           className="absolute left-[3vw] max-md:left-[-10vw] top-[4vw] max-md:top-[6vw] size-[25vw] max-md:size-[65vw] rounded-[2.5vw] border-8 max-md:border-4 border-[#FDFBF7] bg-[#E8DDD1] shadow-2xl overflow-hidden cursor-pointer group"
         >
           {/* Inner image rotated back -45deg so contents stay upright */}
-          <div className="size-full -rotate-45 scale-135 relative flex flex-col justify-end p-[2.2vw] max-md:p-4 bg-cover bg-center" style={{ backgroundImage: "url('/images/polaroid-hand-coconut.jpg')" }}>
+          <div className="size-full -rotate-45 scale-135 relative flex flex-col justify-end p-[2.2vw] max-md:p-4 bg-cover bg-center" style={{ backgroundImage: "url('/img/coconut-holding.webp')" }}>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
             <div className="relative z-10 text-light-beige">
               <p className="font-sans text-[1.1vw] max-md:text-xs font-semibold leading-relaxed drop-shadow-md mb-[1vw] max-md:mb-2">
@@ -169,8 +169,8 @@ export default function YouDeserveSection() {
         >
           <div className="aspect-[4/5] w-full overflow-hidden">
             <img
-              src="/images/polaroid-yellow-coconuts.jpg"
-              alt="Yellow coconuts on wooden bench"
+              src="/img/bunch-of-coconut.webp"
+              alt="Organic fresh coconuts bunched on palm grove floor"
               className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
             />
           </div>
@@ -189,8 +189,8 @@ export default function YouDeserveSection() {
         >
           <div className="aspect-[4/5] w-full overflow-hidden">
             <img
-              src="/images/polaroid-green-coconut.jpg"
-              alt="Fresh green coconut with straw"
+              src="/img/good-coconut.webp"
+              alt="Clean ripe coconut showing natural golden husk texture"
               className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
             />
           </div>

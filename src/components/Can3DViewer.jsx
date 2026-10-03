@@ -3,6 +3,60 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
 
+// Module-level GLTF model cache so can1.glb is downloaded & parsed only ONCE for all cards
+let cachedCanGltf = null;
+let gltfPromise = null;
+
+function getSharedCanModel() {
+  if (cachedCanGltf) return Promise.resolve(cachedCanGltf);
+  if (gltfPromise) return gltfPromise;
+  gltfPromise = new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      '/model/can1.glb',
+      (gltf) => {
+        cachedCanGltf = gltf;
+        resolve(gltf);
+      },
+      undefined,
+      (err) => {
+        gltfPromise = null;
+        reject(err);
+      }
+    );
+  });
+  return gltfPromise;
+}
+
+// Module-level texture cache to prevent duplicate texture network loads
+const textureCache = new Map();
+
+function getCanTexture(url, onLoad) {
+  if (textureCache.has(url)) {
+    const tex = textureCache.get(url);
+    if (onLoad && tex.image) {
+      setTimeout(onLoad, 0);
+    }
+    return tex;
+  }
+  const loader = new THREE.TextureLoader();
+  const texture = loader.load(
+    url,
+    () => {
+      texture.needsUpdate = true;
+      if (onLoad) onLoad();
+    },
+    undefined,
+    (err) => console.warn('Texture load error:', url, err)
+  );
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  textureCache.set(url, texture);
+  return texture;
+}
+
 export default function Can3DViewer({
   textureUrl,
   flavourColor = '#946C3C',
@@ -34,60 +88,70 @@ export default function Can3DViewer({
     // Scene
     const scene = new THREE.Scene();
 
-    // Camera (compact framing)
+    // Camera
     const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     camera.position.set(0, 0, 4.8);
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    mount.appendChild(renderer.domElement);
+    // WebGL Renderer with graceful context fallback
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+        powerPreference: 'default',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      mount.appendChild(renderer.domElement);
+    } catch (e) {
+      console.warn('WebGL init failed in Can3DViewer:', e);
+      return;
+    }
+
+    const handleContextLost = (event) => {
+      event.preventDefault();
+      console.warn('WebGL context lost in Can3DViewer');
+    };
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost, false);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     scene.add(ambientLight);
 
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.2);
     dirLight1.position.set(3, 4, 3);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffe386, 1.0);
+    const dirLight2 = new THREE.DirectionalLight(0xffe386, 1.1);
     dirLight2.position.set(-3, -2, 2);
     scene.add(dirLight2);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.4);
     rimLight.position.set(0, 4, -3);
     scene.add(rimLight);
 
-    // Root Group for rotations & mouse interactions
+    // Root Group
     const canGroup = new THREE.Group();
     scene.add(canGroup);
 
-    let canMesh = null;
     let isDisposed = false;
 
-    // Load texture with flipY = true (correct orientation, right-side-up)
-    const textureLoader = new THREE.TextureLoader();
-    const canTexture = textureLoader.load(textureUrl, () => {
+    // Texture
+    const canTexture = getCanTexture(textureUrl, () => {
+      if (isDisposed) return;
+      canGroup.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.needsUpdate = true;
+        }
+      });
       renderer.render(scene, camera);
     });
-    canTexture.colorSpace = THREE.SRGBColorSpace;
-    canTexture.flipY = true;
-    canTexture.generateMipmaps = true;
-    canTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    canTexture.magFilter = THREE.LinearFilter;
 
-    // Create high-detail procedural aluminum can geometry as fallback / instant placeholder
+    // Helper: Create high-detail procedural aluminum can
     function createProceduralCan() {
       const group = new THREE.Group();
 
-      // Main cylindrical body (compact, elegant size)
       const bodyGeo = new THREE.CylinderGeometry(0.48, 0.48, 1.7, 48, 1, true);
       const bodyMat = new THREE.MeshStandardMaterial({
         map: canTexture,
@@ -97,7 +161,6 @@ export default function Can3DViewer({
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       group.add(body);
 
-      // Silver top shoulder & lid
       const metalMat = new THREE.MeshStandardMaterial({
         color: 0xd8d8d8,
         metalness: 0.85,
@@ -121,7 +184,6 @@ export default function Can3DViewer({
       lid.position.y = 0.96;
       group.add(lid);
 
-      // Silver bottom
       const bottomTaperGeo = new THREE.CylinderGeometry(0.48, 0.42, 0.12, 48);
       const bottomTaper = new THREE.Mesh(bottomTaperGeo, metalMat);
       bottomTaper.position.y = -0.85 - 0.06;
@@ -136,16 +198,19 @@ export default function Can3DViewer({
       return group;
     }
 
-    // Load GLB model
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load(
-      '/model/can1.glb',
-      (gltf) => {
+    // Set initial procedural can immediately (visible from frame 0)
+    const initialCan = createProceduralCan();
+    canGroup.add(initialCan);
+
+    // Apply GLB model once loaded
+    getSharedCanModel()
+      .then((gltf) => {
         if (isDisposed) return;
         canGroup.clear();
-        const model = gltf.scene;
 
-        // Traverse to apply texture to label mesh (Shell) and metal to Bottom/Top
+        // Clone model scene
+        const model = gltf.scene.clone(true);
+
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -160,44 +225,29 @@ export default function Can3DViewer({
                 roughness: 0.32,
                 metalness: 0.18,
               });
+              mat.needsUpdate = true;
               child.material = mat;
             } else {
-              const metalMat = new THREE.MeshStandardMaterial({
+              child.material = new THREE.MeshStandardMaterial({
                 color: 0xd8d8d8,
                 metalness: 0.85,
                 roughness: 0.22,
               });
-              child.material = metalMat;
             }
           }
         });
 
-        // Center model vertically and horizontally
         const box = new THREE.Box3().setFromObject(model);
         const center = box.getCenter(new THREE.Vector3());
         model.position.sub(center);
-
-        // Compact, elegant scale matching Palmo
-        // (can height is ~4.07 units in GLB, scale 0.52 gives ~2.1 units height, perfectly sized)
         model.scale.set(0.52, 0.52, 0.52);
 
         canGroup.add(model);
-        canMesh = model;
-      },
-      undefined,
-      (err) => {
-        console.warn('GLB load fallback to procedural can:', err);
-        if (isDisposed) return;
-        canGroup.clear();
-        canMesh = createProceduralCan();
-        canGroup.add(canMesh);
-      }
-    );
-
-    // Initial procedural can until GLB finishes parsing
-    const initialProcedural = createProceduralCan();
-    canGroup.add(initialProcedural);
-    canMesh = initialProcedural;
+        renderer.render(scene, camera);
+      })
+      .catch((err) => {
+        console.warn('Can GLB fallback to procedural can:', err);
+      });
 
     // Mouse tilt tracking
     let targetRotationX = 0;
@@ -238,7 +288,6 @@ export default function Can3DViewer({
     let animationFrameId;
     let clock = new THREE.Clock();
     let currentScale = 1;
-
     let lastSpinY = 0;
 
     const animate = () => {
@@ -280,8 +329,11 @@ export default function Can3DViewer({
       resizeObserver.disconnect();
       mount.removeEventListener('mousemove', handleMouseMove);
       mount.removeEventListener('mouseleave', handleMouseLeave);
-      if (renderer.domElement && mount.contains(renderer.domElement)) {
-        mount.removeChild(renderer.domElement);
+      if (renderer.domElement) {
+        renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
+        if (mount.contains(renderer.domElement)) {
+          mount.removeChild(renderer.domElement);
+        }
       }
       renderer.dispose();
     };

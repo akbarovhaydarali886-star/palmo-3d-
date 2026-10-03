@@ -233,8 +233,35 @@ export default function FlavourCard({ flavour }) {
           </span>
         </div>
 
+        {/* Fallback Can Silhouette (guarantees cans are never empty or blank) */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+          <div
+            className="w-[36%] max-md:w-[42%] aspect-[1/2.1] relative rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between border border-black/10 transition-transform duration-500 group-hover:scale-105"
+            style={{ backgroundColor: flavour.color }}
+          >
+            {/* Silver Can Top Rim & Lid */}
+            <div className="w-full h-[9%] bg-gradient-to-b from-gray-200 via-gray-100 to-gray-300 border-b border-gray-400/60 flex items-center justify-center">
+              <div className="w-1/2 h-[2px] bg-gray-400 rounded-full opacity-60" />
+            </div>
+            {/* Label Center Graphic */}
+            <div className="flex-1 flex flex-col items-center justify-center p-2 text-white text-center">
+              <span className="font-khand font-black tracking-widest text-[1.4vw] max-md:text-lg uppercase leading-none drop-shadow-md">
+                PALMO
+              </span>
+              <span className="font-patrick-hand text-[0.8vw] max-md:text-xs tracking-wider opacity-90 mt-1">
+                {flavour.name}
+              </span>
+              <span className="mt-2 text-[0.65vw] max-md:text-[9px] font-sans font-semibold tracking-widest uppercase bg-white/20 px-2 py-0.5 rounded-full">
+                0% Sugar
+              </span>
+            </div>
+            {/* Silver Can Bottom */}
+            <div className="w-full h-[9%] bg-gradient-to-t from-gray-300 via-gray-200 to-gray-400 border-t border-gray-400/60" />
+          </div>
+        </div>
+
         {/* 3D WebGL Can */}
-        <div className="absolute inset-0 h-full w-full">
+        <div className="absolute inset-0 h-full w-full z-10">
           <Can3DViewer
             textureUrl={flavour.texture}
             flavourColor={flavour.color}

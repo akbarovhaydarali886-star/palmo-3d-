@@ -81,6 +81,54 @@ export default function CoconutHero() {
     let strawMesh = null;
     let isDisposed = false;
 
+    // --- INSTANT PROCEDURAL COCONUT (VISIBLE FROM FRAME 0) ---
+    const proceduralCoconutGroup = new THREE.Group();
+    const coconutShellMat = new THREE.MeshStandardMaterial({
+      color: 0x4d321d,
+      roughness: 0.88,
+      metalness: 0.05,
+    });
+    const coconutInnerMat = new THREE.MeshStandardMaterial({
+      color: 0xfbf9f5,
+      roughness: 0.25,
+      metalness: 0.05,
+    });
+    const milkMat = new THREE.MeshStandardMaterial({
+      color: 0xf5f3ee,
+      roughness: 0.1,
+      metalness: 0.05,
+    });
+
+    // Procedural left shell (top bowl)
+    const pLeftGroup = new THREE.Group();
+    const pLeftShellGeo = new THREE.SphereGeometry(0.85, 36, 24, 0, Math.PI);
+    const pLeftOuter = new THREE.Mesh(pLeftShellGeo, coconutShellMat);
+    pLeftOuter.rotation.y = Math.PI / 2;
+    pLeftGroup.add(pLeftOuter);
+    proceduralCoconutGroup.add(pLeftGroup);
+
+    // Procedural right shell (bottom bowl)
+    const pRightGroup = new THREE.Group();
+    const pRightShellGeo = new THREE.SphereGeometry(0.85, 36, 24, Math.PI, Math.PI);
+    const pRightOuter = new THREE.Mesh(pRightShellGeo, coconutShellMat);
+    pRightOuter.rotation.y = Math.PI / 2;
+    pRightGroup.add(pRightOuter);
+
+    // Procedural milk disk
+    const pMilkGeo = new THREE.CircleGeometry(0.82, 36);
+    const pMilk = new THREE.Mesh(pMilkGeo, milkMat);
+    pMilk.position.x = 0.01;
+    pMilk.rotation.y = Math.PI / 2;
+    pRightGroup.add(pMilk);
+    proceduralCoconutGroup.add(pRightGroup);
+
+    coconutGroup.add(proceduralCoconutGroup);
+
+    // Initially point meshes to procedural meshes so scroll animation works immediately
+    coconutLeftMesh = pLeftGroup;
+    coconutRightMesh = pRightGroup;
+    coconutMilkMesh = pMilk;
+
     // Yellow Straw inside coconut bowl
     const strawGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.1, 16);
     const strawMat = new THREE.MeshStandardMaterial({
@@ -97,11 +145,66 @@ export default function CoconutHero() {
     // Load Can Texture
     const textureLoader = new THREE.TextureLoader();
     const canTexture = textureLoader.load('/model/tex/coconutWhite.webp', () => {
+      canTexture.needsUpdate = true;
+      canGroup.traverse((child) => {
+        if (child.isMesh && child.material) child.material.needsUpdate = true;
+      });
       renderer.render(scene, camera);
     });
     canTexture.colorSpace = THREE.SRGBColorSpace;
     canTexture.flipY = true;
     canTexture.generateMipmaps = true;
+
+    // Procedural Can Fallback inside canGroup
+    function createProceduralCan() {
+      const group = new THREE.Group();
+      const bodyGeo = new THREE.CylinderGeometry(0.48, 0.48, 1.7, 48, 1, true);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        map: canTexture,
+        roughness: 0.32,
+        metalness: 0.2,
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      group.add(body);
+
+      const metalMat = new THREE.MeshStandardMaterial({
+        color: 0xd8d8d8,
+        metalness: 0.85,
+        roughness: 0.22,
+      });
+      const topTaperGeo = new THREE.CylinderGeometry(0.42, 0.48, 0.12, 48);
+      const topTaper = new THREE.Mesh(topTaperGeo, metalMat);
+      topTaper.position.y = 0.91;
+      group.add(topTaper);
+
+      const topRimGeo = new THREE.TorusGeometry(0.42, 0.024, 16, 48);
+      const topRim = new THREE.Mesh(topRimGeo, metalMat);
+      topRim.rotation.x = Math.PI / 2;
+      topRim.position.y = 0.97;
+      group.add(topRim);
+
+      const lidGeo = new THREE.CircleGeometry(0.41, 48);
+      const lid = new THREE.Mesh(lidGeo, metalMat);
+      lid.rotation.x = -Math.PI / 2;
+      lid.position.y = 0.96;
+      group.add(lid);
+
+      const bottomTaperGeo = new THREE.CylinderGeometry(0.48, 0.42, 0.12, 48);
+      const bottomTaper = new THREE.Mesh(bottomTaperGeo, metalMat);
+      bottomTaper.position.y = -0.91;
+      group.add(bottomTaper);
+
+      const bottomGeo = new THREE.CircleGeometry(0.41, 48);
+      const bottom = new THREE.Mesh(bottomGeo, metalMat);
+      bottom.rotation.x = Math.PI / 2;
+      bottom.position.y = -0.97;
+      group.add(bottom);
+
+      return group;
+    }
+
+    const initialProceduralCan = createProceduralCan();
+    canGroup.add(initialProceduralCan);
 
     // Load Can GLB
     const gltfLoader = new GLTFLoader();
@@ -109,6 +212,7 @@ export default function CoconutHero() {
       '/model/can1.glb',
       (gltf) => {
         if (isDisposed) return;
+        canGroup.clear();
         const canModel = gltf.scene;
         canModel.traverse((child) => {
           if (child.isMesh) {
@@ -118,11 +222,13 @@ export default function CoconutHero() {
               child.material?.name === 'Etiquette' ||
               !child.name.toLowerCase().includes('metal')
             ) {
-              child.material = new THREE.MeshStandardMaterial({
+              const mat = new THREE.MeshStandardMaterial({
                 map: canTexture,
                 roughness: 0.32,
                 metalness: 0.18,
               });
+              mat.needsUpdate = true;
+              child.material = mat;
             } else {
               child.material = new THREE.MeshStandardMaterial({
                 color: 0xd8d8d8,
@@ -138,6 +244,7 @@ export default function CoconutHero() {
         canModel.position.sub(center);
         canModel.scale.set(0.52, 0.52, 0.52);
         canGroup.add(canModel);
+        renderer.render(scene, camera);
       }
     );
 
@@ -146,8 +253,10 @@ export default function CoconutHero() {
       '/model/coconut.glb',
       (gltf) => {
         if (isDisposed) return;
-        const model = gltf.scene;
+        // Remove procedural coconut
+        coconutGroup.remove(proceduralCoconutGroup);
 
+        const model = gltf.scene;
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -173,6 +282,7 @@ export default function CoconutHero() {
         // Scale to prominent hero dimensions (takes ~45% of viewport height)
         model.scale.set(11.5, 11.5, 11.5);
         coconutGroup.add(model);
+        renderer.render(scene, camera);
       }
     );
 
