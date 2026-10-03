@@ -448,21 +448,36 @@ export default function CoconutHero() {
               EVERY SIP.
             </h1>
 
-            {/* Hand-drawn Arrow + Two Tag Pills */}
-            <div className="mt-[3vw] max-md:mt-4 flex items-start gap-[1vw] max-md:gap-2">
-              <svg className="w-[3vw] h-[4vw] max-md:w-8 max-md:h-10 stroke-foreground fill-none" viewBox="0 0 50 80">
+            {/* Hand-drawn Arrow + Two Callout Lines */}
+            <div className="mt-[2.5vw] max-md:mt-4 flex items-start gap-[1vw] max-md:gap-2">
+              <svg className="w-[2.8vw] h-[3.8vw] max-md:w-8 max-md:h-10 stroke-foreground fill-none" viewBox="0 0 50 80">
                 <path d="M 10 10 Q 35 40 25 70" strokeWidth="2.5" strokeLinecap="round" />
                 <path d="M 15 55 L 25 70 L 38 60" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <div className="flex flex-col gap-[0.4vw] max-md:gap-1 pt-[1.5vw] max-md:pt-3">
-                <span className="font-patrick-hand text-[1.1vw] max-md:text-sm font-bold text-foreground bg-[#FFE386] px-[0.8vw] py-[0.15vw] max-md:px-2 max-md:py-0.5 rounded-sm shadow-xs whitespace-nowrap">
-                  • Rich In Electrolytes
-                </span>
-                <span className="font-patrick-hand text-[1.1vw] max-md:text-sm font-bold text-foreground bg-[#FFE386] px-[0.8vw] py-[0.15vw] max-md:px-2 max-md:py-0.5 rounded-sm shadow-xs whitespace-nowrap">
-                  • No Added Sugar
-                </span>
+              <div className="flex flex-col pt-[1.2vw] max-md:pt-2 font-patrick-hand text-[1.35vw] max-md:text-base text-foreground font-bold leading-tight select-none">
+                <span>Rich In Electrolytes</span>
+                <span>No Added Sugar</span>
               </div>
             </div>
+          </div>
+
+          {/* Gyro Sensor Pill (Bottom Left matching media_1791042894999.png) */}
+          <div className="absolute bottom-[3vh] left-[3vw] z-30 flex items-center gap-[0.6vw] max-md:gap-2 rounded-full bg-[#FFE386] border border-[#e5c967] px-[1vw] py-[0.4vw] max-md:px-3 max-md:py-1.5 shadow-sm text-foreground select-none pointer-events-auto">
+            <span className="text-[1.1vw] max-md:text-sm">📱</span>
+            <span className="font-khand font-bold text-[1.1vw] max-md:text-xs uppercase tracking-wide">
+              GYRO SENSOR
+            </span>
+            <span className="text-foreground/40 font-light">|</span>
+            <span className="font-sans text-[0.85vw] max-md:text-[10px] font-medium text-foreground/85">
+              Use Mobile To Experience Gyro Sensor
+            </span>
+            <button
+              type="button"
+              onClick={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+              className="ml-[0.4vw] text-foreground/60 hover:text-foreground font-bold text-sm cursor-pointer"
+            >
+              ×
+            </button>
           </div>
 
           {/* Right Subtext & Discover Button */}

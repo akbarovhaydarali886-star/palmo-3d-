@@ -12,9 +12,20 @@ import BoxOfHealth from './components/BoxOfHealth';
 import NutritionalFacts from './components/NutritionalFacts';
 import Footer from './components/Footer';
 import CookieBanner from './components/CookieBanner';
+import NotFoundView from './components/NotFoundView';
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
+  const [show404, setShow404] = useState(false);
+
+  React.useEffect(() => {
+    const checkHash = () => {
+      setShow404(window.location.hash === '#404');
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, []);
 
   return (
     <CartProvider>
@@ -50,6 +61,16 @@ export default function App() {
 
         {/* Cookie Consent Floating Pill */}
         <CookieBanner />
+
+        {/* 404 Easter Egg Page (from media_1791043000059.png) */}
+        {show404 && (
+          <NotFoundView
+            onBack={() => {
+              window.location.hash = '';
+              setShow404(false);
+            }}
+          />
+        )}
       </div>
     </CartProvider>
   );

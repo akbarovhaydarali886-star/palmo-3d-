@@ -285,15 +285,19 @@ export default function Navbar() {
             <p className="text36 font-patrick-hand text-beige">Say hello</p>
             <div className="flex items-center gap-[0.8vw] max-md:gap-2">
               <a
-                href="mailto:contact@vasavprajapati.com"
-                className="text32 transition-colors duration-300 hover:text-beige"
+                href="mailto:hello@coconut.com"
+                className="text32 transition-colors duration-300 hover:text-beige font-medium"
               >
-                contact@vasavprajapati.com
+                hello@coconut.com
               </a>
               <button
                 type="button"
-                aria-label="Copy contact@vasavprajapati.com"
-                onClick={handleCopyEmail}
+                aria-label="Copy hello@coconut.com"
+                onClick={() => {
+                  navigator.clipboard.writeText('hello@coconut.com');
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
                 className="group relative flex size-[2vw] max-md:size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-all duration-300 active:scale-90 border-light-beige/40 text-light-beige hover:border-beige hover:bg-light-beige hover:text-foreground"
               >
                 <svg
