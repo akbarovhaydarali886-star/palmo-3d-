@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
@@ -9,12 +9,20 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function CoconutHero() {
   const containerRef = useRef(null);
+  const viewportRef = useRef(null);
   const canvasMountRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Dynamic progress values for UI
-  const [stageProgressText, setStageProgressText] = useState('SHAKING 005');
-  const [stageProgressPercent, setStageProgressPercent] = useState(5);
+  // Overlay DOM element refs for direct 60fps manipulation (zero React re-renders!)
+  const stage1Ref = useRef(null);
+  const stage2Ref = useRef(null);
+  const stage3Ref = useRef(null);
+  const stage4Ref = useRef(null);
+  const progressContainerRef = useRef(null);
+  const progressTextPrefixRef = useRef(null);
+  const progressTextNumRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const crackGlowRef = useRef(null);
+  const scallopWaveRef = useRef(null);
 
   useEffect(() => {
     const mount = canvasMountRef.current;
@@ -26,51 +34,65 @@ export default function CoconutHero() {
     // 1. Three.js Scene Setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 0, 5.0);
+    camera.position.set(0, 0, 4.8);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: true,
+      antialias: false, // Performance optimization
       powerPreference: 'high-performance',
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+    // Realistic Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.2);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.4);
-    dirLight1.position.set(3, 4, 3);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 2.5);
+    dirLight1.position.set(4, 5, 4);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffe386, 1.2);
-    dirLight2.position.set(-3, -2, 2);
+    const dirLight2 = new THREE.DirectionalLight(0xffe386, 1.3);
+    dirLight2.position.set(-4, -2, 3);
     scene.add(dirLight2);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    rimLight.position.set(0, 4, -3);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    rimLight.position.set(0, 4, -4);
     scene.add(rimLight);
 
-    // Root Group for coconut & can
+    // Root Transformation Groups
     const masterGroup = new THREE.Group();
     scene.add(masterGroup);
 
     const coconutGroup = new THREE.Group();
     masterGroup.add(coconutGroup);
+    // Align coconut so -X points UP (+Y in world), +X points DOWN (-Y in world)
+    coconutGroup.rotation.z = Math.PI / 2;
 
     const canGroup = new THREE.Group();
     masterGroup.add(canGroup);
-    canGroup.scale.set(0.001, 0.001, 0.001); // starts hidden
+    canGroup.scale.set(0.0001, 0.0001, 0.0001); // hidden initially
 
     let coconutLeftMesh = null;
     let coconutRightMesh = null;
     let coconutMilkMesh = null;
     let strawMesh = null;
-    let canModel = null;
     let isDisposed = false;
+
+    // Yellow Straw inside coconut bowl
+    const strawGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.1, 16);
+    const strawMat = new THREE.MeshStandardMaterial({
+      color: 0xffe386,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+    strawMesh = new THREE.Mesh(strawGeo, strawMat);
+    strawMesh.rotation.z = -Math.PI / 5;
+    strawMesh.position.set(0, 0.45, 0.2);
+    strawMesh.visible = false;
+    masterGroup.add(strawMesh);
 
     // Load Can Texture
     const textureLoader = new THREE.TextureLoader();
@@ -81,47 +103,13 @@ export default function CoconutHero() {
     canTexture.flipY = true;
     canTexture.generateMipmaps = true;
 
-    // Create Straw
-    const strawGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.9, 16);
-    const strawMat = new THREE.MeshStandardMaterial({
-      color: 0xffe386,
-      roughness: 0.3,
-      metalness: 0.1,
-    });
-    strawMesh = new THREE.Mesh(strawGeo, strawMat);
-    strawMesh.rotation.z = Math.PI / 4;
-    strawMesh.position.set(0.18, 0.15, 0.1);
-    strawMesh.visible = false;
-    coconutGroup.add(strawMesh);
-
-    // Procedural Fallback Can
-    function createProceduralCan() {
-      const g = new THREE.Group();
-      const bodyGeo = new THREE.CylinderGeometry(0.48, 0.48, 1.7, 48, 1, true);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        map: canTexture,
-        roughness: 0.32,
-        metalness: 0.2,
-      });
-      g.add(new THREE.Mesh(bodyGeo, bodyMat));
-
-      const metalMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.85, roughness: 0.22 });
-      const topTaper = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 0.12, 48), metalMat);
-      topTaper.position.y = 0.91;
-      g.add(topTaper);
-      const bottomTaper = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.42, 0.12, 48), metalMat);
-      bottomTaper.position.y = -0.91;
-      g.add(bottomTaper);
-      return g;
-    }
-
     // Load Can GLB
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
       '/model/can1.glb',
       (gltf) => {
         if (isDisposed) return;
-        canModel = gltf.scene;
+        const canModel = gltf.scene;
         canModel.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -150,41 +138,8 @@ export default function CoconutHero() {
         canModel.position.sub(center);
         canModel.scale.set(0.52, 0.52, 0.52);
         canGroup.add(canModel);
-      },
-      undefined,
-      () => {
-        if (isDisposed) return;
-        canModel = createProceduralCan();
-        canGroup.add(canModel);
       }
     );
-
-    // Procedural Fallback Coconut
-    function createProceduralCoconut() {
-      const g = new THREE.Group();
-      const huskMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.85 });
-      const meatMat = new THREE.MeshStandardMaterial({ color: 0xf5f3ee, roughness: 0.4 });
-      const waterMat = new THREE.MeshStandardMaterial({ color: 0xe0f7fa, roughness: 0.1, transparent: true, opacity: 0.85 });
-
-      // Top shell
-      const topShell = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), huskMat);
-      topShell.name = 'coconut_left.001';
-      g.add(topShell);
-
-      // Bottom shell
-      const botShell = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), huskMat);
-      botShell.name = 'coconut_right.001';
-      g.add(botShell);
-
-      // Water surface inside bottom shell
-      const water = new THREE.Mesh(new THREE.CircleGeometry(0.65, 32), waterMat);
-      water.rotation.x = -Math.PI / 2;
-      water.position.y = 0;
-      water.name = 'milk';
-      g.add(water);
-
-      return g;
-    }
 
     // Load Coconut GLB
     gltfLoader.load(
@@ -196,53 +151,40 @@ export default function CoconutHero() {
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
+            child.receiveShadow = true;
             if (child.name.includes('left')) coconutLeftMesh = child;
             if (child.name.includes('right')) coconutRightMesh = child;
             if (child.name.includes('milk') || child.name.includes('Circle')) {
               coconutMilkMesh = child;
-              // Make milk look glistened with water reflection
               child.material = new THREE.MeshStandardMaterial({
-                color: 0xf4f0e6,
-                roughness: 0.15,
-                metalness: 0.1,
+                color: 0xf6f3ee,
+                roughness: 0.12,
+                metalness: 0.08,
               });
+            } else if (child.material) {
+              child.material.roughness = 0.75;
+              child.material.metalness = 0.05;
             }
           }
         });
 
-        // Center and scale coconut
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        model.position.sub(center);
-
-        // Coconut model scale in units
-        model.scale.set(5.2, 5.2, 5.2);
-        // Default horizontal orientation
-        model.rotation.z = Math.PI / 2;
+        // Offset center of mass
+        model.position.set(0.046, 0, 0);
+        // Scale to prominent hero dimensions (takes ~45% of viewport height)
+        model.scale.set(11.5, 11.5, 11.5);
         coconutGroup.add(model);
-      },
-      undefined,
-      () => {
-        if (isDisposed) return;
-        const fallback = createProceduralCoconut();
-        coconutLeftMesh = fallback.getObjectByName('coconut_left.001');
-        coconutRightMesh = fallback.getObjectByName('coconut_right.001');
-        coconutMilkMesh = fallback.getObjectByName('milk');
-        fallback.scale.set(1.5, 1.5, 1.5);
-        coconutGroup.add(fallback);
       }
     );
 
-    // Mouse tilt interaction
+    // Mouse tilt tracking
     let mouseTargetX = 0;
     let mouseTargetY = 0;
     let currentTiltX = 0;
     let currentTiltY = 0;
 
     const handleMouseMove = (e) => {
-      const rect = mount.getBoundingClientRect();
-      mouseTargetX = (e.clientX - rect.left) / rect.width - 0.5;
-      mouseTargetY = (e.clientY - rect.top) / rect.height - 0.5;
+      mouseTargetX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseTargetY = (e.clientY / window.innerHeight - 0.5) * 2;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -259,39 +201,101 @@ export default function CoconutHero() {
 
     window.addEventListener('resize', handleResize);
 
-    // Render loop state references
+    // Animation progress state (scrubbed smoothly via GSAP)
     const animState = {
       progress: 0,
-      shakeIntensity: 0,
+      shake: 0,
     };
 
-    // GSAP ScrollTrigger Scrub Timeline
+    // GSAP ScrollTrigger Pinned Scrub Timeline
     const trigger = ScrollTrigger.create({
       trigger: containerRef.current,
       start: 'top top',
       end: 'bottom bottom',
-      scrub: 0.6,
+      pin: viewportRef.current,
+      scrub: 0.4,
       onUpdate: (self) => {
         const p = self.progress;
         animState.progress = p;
-        setScrollProgress(p);
 
-        // Update progress bar UI
-        if (p < 0.3) {
-          setStageProgressText('SHAKING 005');
-          setStageProgressPercent(5);
-        } else if (p < 0.6) {
-          const val = Math.round(5 + ((p - 0.3) / 0.3) * 57); // 005 -> 062
-          setStageProgressText(`SHAKING ${String(val).padStart(3, '0')}`);
-          setStageProgressPercent(val);
-        } else {
-          setStageProgressText('CANNED 100');
-          setStageProgressPercent(100);
+        // ---------------- DIRECT DOM UPDATES (NO REACT RE-RENDERS) ----------------
+        // 1. Stage 1: "PARADISE IN EVERY SIP." (p: 0.0 -> 0.22)
+        if (stage1Ref.current) {
+          const op1 = p <= 0.2 ? Math.max(0, 1 - p * 4.8) : 0;
+          stage1Ref.current.style.opacity = op1;
+          stage1Ref.current.style.pointerEvents = op1 > 0.1 ? 'auto' : 'none';
+          stage1Ref.current.style.transform = `translateY(${-p * 60}px)`;
+        }
+
+        // 2. Stage 2: "THE REAL SOURCE OF EVERY SIP." & Orbiting Badges (p: 0.22 -> 0.50)
+        if (stage2Ref.current) {
+          let op2 = 0;
+          if (p > 0.22 && p <= 0.36) op2 = (p - 0.22) / 0.14;
+          else if (p > 0.36 && p <= 0.48) op2 = 1;
+          else if (p > 0.48 && p <= 0.54) op2 = 1 - (p - 0.48) / 0.06;
+          stage2Ref.current.style.opacity = op2;
+          stage2Ref.current.style.pointerEvents = op2 > 0.1 ? 'auto' : 'none';
+        }
+
+        // 3. Stage 3: "COCONUT" & Emerging Can & 360 Spin (p: 0.54 -> 0.78)
+        if (stage3Ref.current) {
+          let op3 = 0;
+          if (p > 0.56 && p <= 0.65) op3 = (p - 0.56) / 0.09;
+          else if (p > 0.65 && p <= 0.75) op3 = 1;
+          else if (p > 0.75 && p <= 0.82) op3 = 1 - (p - 0.75) / 0.07;
+          stage3Ref.current.style.opacity = op3;
+          stage3Ref.current.style.pointerEvents = op3 > 0.1 ? 'auto' : 'none';
+        }
+
+        // 4. Stage 4: "KEEP PALMO SIPPING.." (p: 0.75 -> 1.0)
+        if (stage4Ref.current) {
+          const op4 = p >= 0.75 ? Math.min(1, (p - 0.75) * 5) : 0;
+          stage4Ref.current.style.opacity = op4;
+        }
+
+        // 5. Progress Indicator Bar ("SHAKING 005" -> "062" -> "CANNED 100")
+        if (progressContainerRef.current) {
+          const isVisible = p >= 0.38 && p <= 0.88;
+          progressContainerRef.current.style.opacity = isVisible ? '1' : '0';
+
+          if (p < 0.48) {
+            if (progressTextPrefixRef.current) progressTextPrefixRef.current.textContent = 'SHAKING';
+            if (progressTextNumRef.current) progressTextNumRef.current.textContent = '005';
+            if (progressBarRef.current) progressBarRef.current.style.width = '8%';
+          } else if (p < 0.68) {
+            const num = Math.round(5 + ((p - 0.48) / 0.2) * 57);
+            if (progressTextPrefixRef.current) progressTextPrefixRef.current.textContent = 'SHAKING';
+            if (progressTextNumRef.current) progressTextNumRef.current.textContent = String(num).padStart(3, '0');
+            if (progressBarRef.current) progressBarRef.current.style.width = `${Math.round(num * 0.95)}%`;
+          } else {
+            if (progressTextPrefixRef.current) progressTextPrefixRef.current.textContent = 'CANNED';
+            if (progressTextNumRef.current) progressTextNumRef.current.textContent = '100';
+            if (progressBarRef.current) progressBarRef.current.style.width = '100%';
+          }
+        }
+
+        // 6. Glowing Crack Light
+        if (crackGlowRef.current) {
+          const isCrack = p > 0.42 && p < 0.58;
+          crackGlowRef.current.style.opacity = isCrack ? '1' : '0';
+        }
+
+        // 7. Scalloped Wave rising from bottom into #pure-coconut
+        if (scallopWaveRef.current) {
+          if (p >= 0.72) {
+            const waveProgress = (p - 0.72) / 0.28; // 0 to 1
+            const translateY = (1 - waveProgress) * 100;
+            scallopWaveRef.current.style.transform = `translateY(${translateY}%)`;
+            scallopWaveRef.current.style.opacity = '1';
+          } else {
+            scallopWaveRef.current.style.transform = 'translateY(100%)';
+            scallopWaveRef.current.style.opacity = '0';
+          }
         }
       },
     });
 
-    // Animation Loop
+    // Three.js Render Loop
     let animationFrameId;
     let clock = new THREE.Clock();
 
@@ -300,25 +304,26 @@ export default function CoconutHero() {
       const elapsedTime = clock.getElapsedTime();
       const p = animState.progress;
 
-      // Mouse Parallax interpolation
-      currentTiltX += (mouseTargetX * 0.4 - currentTiltX) * 0.05;
-      currentTiltY += (mouseTargetY * 0.3 - currentTiltY) * 0.05;
+      // Smooth Mouse Tilt Interpolation
+      currentTiltX += (mouseTargetX * 0.2 - currentTiltX) * 0.05;
+      currentTiltY += (mouseTargetY * 0.15 - currentTiltY) * 0.05;
 
       // Gentle floating bob
-      const idleBob = Math.sin(elapsedTime * 1.5) * 0.04;
+      const idleBob = Math.sin(elapsedTime * 1.6) * 0.035;
 
-      // STAGE 1: p from 0.0 to 0.25 (Floating Whole Coconut)
-      if (p <= 0.25) {
-        const normP = p / 0.25;
+      // STAGE 1: p from 0.0 to 0.22 (Closed Floating Coconut with Mouse Parallax)
+      if (p <= 0.22) {
         coconutGroup.visible = true;
         canGroup.visible = false;
         if (strawMesh) strawMesh.visible = false;
 
-        // Position & Idle Float
-        coconutGroup.position.set(currentTiltX * 0.6, idleBob, 0);
-        coconutGroup.rotation.set(currentTiltY + idleBob * 0.5, currentTiltX * 0.8 + normP * 0.4, 0);
+        coconutGroup.position.set(currentTiltX * 0.4, idleBob, 0);
+        coconutGroup.rotation.set(
+          currentTiltY + idleBob * 0.3,
+          currentTiltX * 0.5 + p * 0.5,
+          Math.PI / 2 - 0.15
+        );
 
-        // Keep coconut halves joined together
         if (coconutLeftMesh) {
           coconutLeftMesh.position.set(0, 0, 0);
           coconutLeftMesh.rotation.set(0, 0, 0);
@@ -328,72 +333,78 @@ export default function CoconutHero() {
           coconutRightMesh.rotation.set(0, 0, 0);
         }
       }
-      // STAGE 2: p from 0.25 to 0.5 (Coconut Cracks Open -> Coconut Bowl with Straw)
-      else if (p > 0.25 && p <= 0.5) {
-        const normP = (p - 0.25) / 0.25; // 0 to 1
+      // STAGE 2: p from 0.22 to 0.50 (Coconut Cracks Open -> Coconut Bowl with Straw)
+      else if (p > 0.22 && p <= 0.50) {
+        const normP = (p - 0.22) / 0.28; // 0 to 1
         coconutGroup.visible = true;
         canGroup.visible = false;
-        if (strawMesh) strawMesh.visible = true;
 
-        // Tilt coconut bowl towards user to look into coconut water
-        coconutGroup.position.set(currentTiltX * 0.5, idleBob - normP * 0.1, 0);
-        coconutGroup.rotation.x = currentTiltY + normP * 0.75; // tilts up to show inside
-        coconutGroup.rotation.y = currentTiltX * 0.6;
-        coconutGroup.rotation.z = Math.sin(normP * Math.PI) * 0.1;
+        // Bowl tilts towards camera so user can look down into coconut water
+        coconutGroup.position.set(currentTiltX * 0.4, idleBob - normP * 0.15, 0);
+        coconutGroup.rotation.set(
+          currentTiltY + normP * 0.65, // tilt down towards viewer
+          currentTiltX * 0.4,
+          Math.PI / 2
+        );
 
-        // Top half lifts and tilts away
+        // Top half (coconut_left.001) lifts UP and tilts open
         if (coconutLeftMesh) {
-          coconutLeftMesh.position.y = normP * 0.55;
-          coconutLeftMesh.position.z = -normP * 0.2;
-          coconutLeftMesh.rotation.x = -normP * 0.8;
-          coconutLeftMesh.rotation.z = normP * 0.3;
+          coconutLeftMesh.position.x = -normP * 0.08; // moves UP in world space
+          coconutLeftMesh.rotation.y = normP * 0.45;  // tilts open
         }
 
-        // Bottom half stays as bowl
-        if (coconutRightMesh) {
-          coconutRightMesh.position.y = -normP * 0.05;
+        // Straw emerges inside bowl
+        if (strawMesh) {
+          strawMesh.visible = normP > 0.3;
+          strawMesh.position.set(0.18 + currentTiltX * 0.4, idleBob + 0.15 - normP * 0.15, 0.1);
         }
       }
-      // STAGE 3: p from 0.5 to 0.8 (Shake -> Can Emerges -> 360 Spin)
-      else if (p > 0.5 && p <= 0.8) {
-        const normP = (p - 0.5) / 0.3; // 0 to 1
+      // STAGE 3: p from 0.50 to 0.78 (Shake -> Shells Fly Apart -> Can Emerges & 360 Spin)
+      else if (p > 0.50 && p <= 0.78) {
+        const normP = (p - 0.50) / 0.28; // 0 to 1
+
+        if (strawMesh) strawMesh.visible = false;
 
         if (normP < 0.35) {
-          // Shaking Phase
-          const shake = (1 - normP / 0.35) * 0.12;
+          // Shaking & Shells separate
+          const shakePhase = normP / 0.35;
+          const shakeMag = (1 - shakePhase) * 0.08;
           coconutGroup.visible = true;
-          coconutGroup.position.x = (Math.random() - 0.5) * shake;
-          coconutGroup.position.y = (Math.random() - 0.5) * shake;
+          coconutGroup.position.set(
+            (Math.random() - 0.5) * shakeMag,
+            idleBob + (Math.random() - 0.5) * shakeMag,
+            0
+          );
 
-          // Halves separate vertically
-          if (coconutLeftMesh) coconutLeftMesh.position.y = 0.55 + normP * 1.2;
-          if (coconutRightMesh) coconutRightMesh.position.y = -normP * 1.2;
+          if (coconutLeftMesh) coconutLeftMesh.position.x = -0.08 - shakePhase * 0.35;
+          if (coconutRightMesh) coconutRightMesh.position.x = shakePhase * 0.35;
 
+          // Can emerges from center
           canGroup.visible = true;
-          const canScale = (normP / 0.35) * 1.0;
+          const canScale = shakePhase;
           canGroup.scale.set(canScale, canScale, canScale);
-          canGroup.position.set(0, 0, 0);
+          canGroup.position.set(0, idleBob, 0);
         } else {
-          // Can is fully emerged, shells fly off
+          // Shells gone, Palmo Can in center rotating 360° on scroll!
           coconutGroup.visible = false;
           canGroup.visible = true;
           canGroup.scale.set(1, 1, 1);
 
-          // 360 Can Rotation on Scroll
           const spinP = (normP - 0.35) / 0.65;
-          canGroup.rotation.y = spinP * Math.PI * 2.2 + currentTiltX * 0.8;
-          canGroup.rotation.x = currentTiltY * 0.5;
+          // Smooth 360 rotation revealing nutrition facts, barcode, 15% OFF star
+          canGroup.rotation.y = spinP * Math.PI * 2.2 + currentTiltX * 0.5;
+          canGroup.rotation.x = currentTiltY * 0.3;
           canGroup.position.set(currentTiltX * 0.3, idleBob, 0);
         }
       }
-      // STAGE 4: p > 0.8 (Can Sinks as Scalloped Wave rises)
+      // STAGE 4: p > 0.78 (Can Descends into Rising Scalloped Section)
       else {
         coconutGroup.visible = false;
         canGroup.visible = true;
-        const normP = (p - 0.8) / 0.2; // 0 to 1
+        const normP = (p - 0.78) / 0.22; // 0 to 1
         canGroup.scale.set(1, 1, 1);
-        canGroup.position.y = idleBob - normP * 0.6; // descends slightly
-        canGroup.rotation.y = Math.PI * 2.2 + normP * 0.5;
+        canGroup.position.set(currentTiltX * 0.2, idleBob - normP * 0.6, 0);
+        canGroup.rotation.y = Math.PI * 2.2 + normP * 0.4;
       }
 
       renderer.render(scene, camera);
@@ -415,20 +426,19 @@ export default function CoconutHero() {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative w-full h-[550vh] bg-background">
-      {/* Sticky Fullscreen Viewport */}
-      <div className="sticky top-0 left-0 w-full h-screen overflow-hidden flex items-center justify-center pointer-events-none select-none">
-        
+    <div ref={containerRef} className="relative w-full h-[520vh] bg-background">
+      {/* GSAP Pinned Viewport Container */}
+      <div
+        ref={viewportRef}
+        className="w-full h-screen overflow-hidden flex items-center justify-center pointer-events-none select-none relative"
+      >
         {/* Three.js Canvas Mount */}
         <div ref={canvasMountRef} className="absolute inset-0 size-full z-10 pointer-events-auto" />
 
-        {/* ----------------- STAGE 1 OVERLAY (p: 0.0 - 0.25) ----------------- */}
+        {/* ----------------- STAGE 1 OVERLAY ("PARADISE IN EVERY SIP.") ----------------- */}
         <div
-          style={{
-            opacity: scrollProgress <= 0.2 ? Math.max(0, 1 - scrollProgress * 5) : 0,
-            transform: `translateY(${-scrollProgress * 80}px)`,
-          }}
-          className="absolute inset-0 size-full flex items-center justify-between paddx pointer-events-none transition-opacity duration-300 z-20"
+          ref={stage1Ref}
+          className="absolute inset-0 size-full flex items-center justify-between paddx pointer-events-none will-change-[opacity,transform] z-20"
         >
           {/* Left Title: PARADISE IN EVERY SIP. */}
           <div className="w-[30vw] max-md:w-full flex flex-col items-start pt-[6vw] max-md:pt-[18vw]">
@@ -473,13 +483,11 @@ export default function CoconutHero() {
           </div>
         </div>
 
-        {/* ----------------- STAGE 2 OVERLAY (p: 0.25 - 0.5) ----------------- */}
+        {/* ----------------- STAGE 2 OVERLAY ("THE REAL SOURCE OF EVERY SIP.") ----------------- */}
         <div
-          style={{
-            opacity: scrollProgress > 0.22 && scrollProgress < 0.52 ? Math.min(1, Math.max(0, (scrollProgress - 0.22) * 8)) : 0,
-            pointerEvents: scrollProgress > 0.22 && scrollProgress < 0.52 ? 'auto' : 'none',
-          }}
-          className="absolute inset-0 size-full paddx flex items-center justify-between pointer-events-none transition-opacity duration-300 z-20"
+          ref={stage2Ref}
+          style={{ opacity: 0 }}
+          className="absolute inset-0 size-full paddx flex items-center justify-between pointer-events-none will-change-[opacity] z-20"
         >
           {/* Left: THE REAL */}
           <div className="w-[30vw] max-md:w-full flex flex-col items-start">
@@ -500,14 +508,9 @@ export default function CoconutHero() {
             </h2>
           </div>
 
-          {/* 3 Orbiting Badges Around Open Coconut Bowl */}
+          {/* 3 Orbiting Badges Around Coconut Bowl */}
           {/* Badge 1: 0GM Of Sugar */}
-          <div
-            style={{
-              transform: `translate(${Math.cos(scrollProgress * 12) * 20}px, ${Math.sin(scrollProgress * 12) * 20}px)`,
-            }}
-            className="absolute left-[24vw] max-md:left-[6vw] bottom-[28vh] size-[10vw] max-md:size-[24vw] rounded-full bg-[#463721] border-4 border-[#FFE386] flex flex-col items-center justify-center text-center p-[1vw] shadow-2xl z-30 transition-transform"
-          >
+          <div className="absolute left-[24vw] max-md:left-[6vw] bottom-[28vh] size-[10vw] max-md:size-[24vw] rounded-full bg-[#463721] border-4 border-[#FFE386] flex flex-col items-center justify-center text-center p-[1vw] shadow-2xl z-30 animate-pulse">
             <span className="font-khand text-[2.4vw] max-md:text-2xl font-bold text-[#FFE386] leading-none">
               0GM
             </span>
@@ -517,12 +520,7 @@ export default function CoconutHero() {
           </div>
 
           {/* Badge 2: 100% Natural Hydration */}
-          <div
-            style={{
-              transform: `translate(${Math.sin(scrollProgress * 12) * 20}px, ${-Math.cos(scrollProgress * 12) * 20}px)`,
-            }}
-            className="absolute right-[22vw] max-md:right-[6vw] top-[24vh] size-[11vw] max-md:size-[26vw] rounded-full bg-[#463721] border-4 border-[#FFE386] flex flex-col items-center justify-center text-center p-[1vw] shadow-2xl z-30 transition-transform"
-          >
+          <div className="absolute right-[22vw] max-md:right-[6vw] top-[24vh] size-[11vw] max-md:size-[26vw] rounded-full bg-[#463721] border-4 border-[#FFE386] flex flex-col items-center justify-center text-center p-[1vw] shadow-2xl z-30 animate-pulse">
             <span className="font-khand text-[2.6vw] max-md:text-2xl font-bold text-[#FFE386] leading-none">
               100%
             </span>
@@ -532,12 +530,7 @@ export default function CoconutHero() {
           </div>
 
           {/* Badge 3: 45KCL Per 200Ml */}
-          <div
-            style={{
-              transform: `translate(${Math.cos(scrollProgress * 10) * 15}px, ${Math.sin(scrollProgress * 10) * 15}px)`,
-            }}
-            className="absolute left-[46vw] -translate-x-1/2 top-[14vh] size-[8.5vw] max-md:size-[20vw] rounded-full bg-[#FFE386] border-4 border-[#463721] flex flex-col items-center justify-center text-center p-[0.8vw] shadow-2xl z-30 transition-transform"
-          >
+          <div className="absolute left-[50%] -translate-x-1/2 top-[14vh] size-[8.5vw] max-md:size-[20vw] rounded-full bg-[#FFE386] border-4 border-[#463721] flex flex-col items-center justify-center text-center p-[0.8vw] shadow-2xl z-30">
             <span className="font-khand text-[2vw] max-md:text-xl font-bold text-[#463721] leading-none">
               45KCL
             </span>
@@ -547,15 +540,31 @@ export default function CoconutHero() {
           </div>
         </div>
 
-        {/* ----------------- STAGE 3 OVERLAY (p: 0.5 - 0.78) ----------------- */}
+        {/* Vertical Glowing Crack Line Overlay */}
         <div
-          style={{
-            opacity: scrollProgress > 0.55 && scrollProgress < 0.8 ? Math.min(1, Math.max(0, (scrollProgress - 0.55) * 8)) : 0,
-            pointerEvents: scrollProgress > 0.55 && scrollProgress < 0.8 ? 'auto' : 'none',
-          }}
-          className="absolute inset-0 size-full paddx flex items-center justify-between pointer-events-none transition-opacity duration-300 z-20"
+          ref={crackGlowRef}
+          style={{ opacity: 0 }}
+          className="pointer-events-none absolute inset-0 size-full z-15 flex items-center justify-center will-change-[opacity]"
         >
-          {/* Left: COCONUT + details */}
+          <svg viewBox="0 0 200 400" className="w-[12vw] h-[28vw] overflow-visible">
+            <path
+              d="M 100 20 L 105 90 L 95 160 L 108 230 L 92 310 L 100 380"
+              stroke="#FFFFFF"
+              strokeWidth="6"
+              fill="none"
+              strokeLinecap="round"
+              className="drop-shadow-[0_0_15px_#ffffff]"
+            />
+          </svg>
+        </div>
+
+        {/* ----------------- STAGE 3 OVERLAY ("COCONUT" & Can Rotation) ----------------- */}
+        <div
+          ref={stage3Ref}
+          style={{ opacity: 0 }}
+          className="absolute inset-0 size-full paddx flex items-center justify-between pointer-events-none will-change-[opacity] z-20"
+        >
+          {/* Left: COCONUT */}
           <div className="w-[28vw] max-md:w-full flex flex-col items-start">
             <h2 className="font-khand text180 max-md:text-[14vw] font-bold text-foreground leading-[85%] uppercase tracking-[-0.04em]">
               COCONUT
@@ -565,7 +574,7 @@ export default function CoconutHero() {
             </p>
           </div>
 
-          {/* Right: Six flavours + Explore button */}
+          {/* Right: Six flavours */}
           <div className="w-[28vw] max-md:hidden flex flex-col items-start pl-[2vw]">
             <p className="font-sans text-[1.1vw] text-foreground/80 mb-[2vw] font-medium leading-relaxed">
               Six flavours, each one pressed with real fruit. Mango, lychee, guava and three more worth meeting.
@@ -576,67 +585,60 @@ export default function CoconutHero() {
           </div>
         </div>
 
-        {/* ----------------- STAGE 4 OVERLAY (p: 0.75 - 1.0) ----------------- */}
+        {/* ----------------- STAGE 4 OVERLAY ("KEEP PALMO SIPPING..") ----------------- */}
         <div
-          style={{
-            opacity: scrollProgress >= 0.75 ? Math.min(1, (scrollProgress - 0.75) * 6) : 0,
-          }}
-          className="absolute inset-0 size-full flex items-center justify-center pointer-events-none transition-opacity duration-300 z-5"
+          ref={stage4Ref}
+          style={{ opacity: 0 }}
+          className="absolute inset-0 size-full flex items-center justify-center pointer-events-none will-change-[opacity] z-5"
         >
-          {/* Big Typography Behind Can: KEEP PALMO SIPPING.. */}
           <h2 className="font-khand text-[15vw] max-md:text-[18vw] font-bold uppercase tracking-[-0.04em] text-foreground/90 whitespace-nowrap text-center select-none">
             KEEP PALMO SIPPING..
           </h2>
         </div>
 
-        {/* Diagonal Ray Line (Present in original Palmo screenshots) */}
-        <div
-          style={{
-            opacity: scrollProgress > 0.65 ? Math.min(1, (scrollProgress - 0.65) * 4) : 0,
-          }}
-          className="pointer-events-none absolute inset-0 size-full z-8 overflow-hidden"
-        >
+        {/* Diagonal Ray Line */}
+        <div className="pointer-events-none absolute inset-0 size-full z-8 overflow-hidden">
           <div className="absolute top-0 left-[10vw] w-[140vw] h-[2px] bg-[#FFE386] origin-top-left rotate-[28deg] opacity-70" />
         </div>
 
-        {/* Bottom Left Progress Bar Indicator (SHAKING 005 -> 062 -> CANNED 100) */}
+        {/* Bottom Left Progress Bar Indicator */}
         <div
-          style={{
-            opacity: scrollProgress > 0.35 && scrollProgress < 0.88 ? 1 : 0,
-            transition: 'opacity 0.4s ease',
-          }}
-          className="absolute bottom-[4vh] left-[4vw] z-30 flex flex-col gap-[0.4vw] max-md:gap-1 pointer-events-none"
+          ref={progressContainerRef}
+          style={{ opacity: 0 }}
+          className="absolute bottom-[4vh] left-[4vw] z-30 flex flex-col gap-[0.4vw] max-md:gap-1 pointer-events-none will-change-[opacity]"
         >
           <div className="flex items-baseline justify-between w-[18vw] max-md:w-[50vw]">
-            <span className="font-khand text-[1.4vw] max-md:text-sm font-bold uppercase tracking-wider text-foreground">
-              {stageProgressText.split(' ')[0]}
+            <span
+              ref={progressTextPrefixRef}
+              className="font-khand text-[1.4vw] max-md:text-sm font-bold uppercase tracking-wider text-foreground"
+            >
+              SHAKING
             </span>
-            <span className="font-khand text-[1.4vw] max-md:text-sm font-bold tracking-wider text-foreground">
-              {stageProgressText.split(' ')[1] || '100'}
+            <span
+              ref={progressTextNumRef}
+              className="font-khand text-[1.4vw] max-md:text-sm font-bold tracking-wider text-foreground"
+            >
+              005
             </span>
           </div>
-          {/* Progress Bar Track */}
           <div className="w-[18vw] max-md:w-[50vw] h-[0.35vw] max-md:h-1.5 rounded-full bg-foreground/20 overflow-hidden">
             <div
-              style={{ width: `${stageProgressPercent}%` }}
-              className="h-full bg-foreground transition-all duration-150 rounded-full"
+              ref={progressBarRef}
+              style={{ width: '5%' }}
+              className="h-full bg-foreground transition-all duration-100 rounded-full"
             />
           </div>
         </div>
 
-        {/* Rising Scalloped Dark Wave Border (Transitions to #pure-coconut) */}
+        {/* Rising Scalloped Dark Wave Border */}
         <div
-          style={{
-            transform: `translateY(${Math.max(0, (1 - (scrollProgress - 0.75) / 0.25) * 100)}%)`,
-            opacity: scrollProgress >= 0.72 ? 1 : 0,
-          }}
+          ref={scallopWaveRef}
+          style={{ transform: 'translateY(100%)', opacity: 0 }}
           className="absolute inset-x-0 bottom-0 w-full h-[55vh] z-25 pointer-events-none will-change-transform flex flex-col justify-end"
         >
-          {/* Scallop Waves SVG */}
           <svg viewBox="0 0 1440 180" fill="none" preserveAspectRatio="none" className="w-full h-[8vw] max-md:h-[18vw] fill-[#463721]">
             <path d="M0,180 L0,80 C120,-30 240,-30 360,80 C480,-30 600,-30 720,80 C840,-30 960,-30 1080,80 C1200,-30 1320,-30 1440,80 L1440,180 Z" />
           </svg>
-          {/* Solid Dark Fill */}
           <div className="w-full h-full bg-[#463721]" />
         </div>
 
