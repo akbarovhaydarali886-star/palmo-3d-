@@ -3,11 +3,15 @@ import { CartProvider } from './context/CartContext';
 import Loader from './components/Loader';
 import Navbar from './components/Navbar';
 import CartDrawer from './components/CartDrawer';
-import HeroSection from './components/HeroSection';
-import FlavoursGrid from './components/FlavoursGrid';
-import NutritionalFacts from './components/NutritionalFacts';
+import CoconutHero from './components/CoconutHero';
+import PureCoconutSection from './components/PureCoconutSection';
+import ExploreFlavoursSection from './components/ExploreFlavoursSection';
+import YouDeserveSection from './components/YouDeserveSection';
+import SippersSaySection from './components/SippersSaySection';
 import BoxOfHealth from './components/BoxOfHealth';
+import NutritionalFacts from './components/NutritionalFacts';
 import Footer from './components/Footer';
+import CookieBanner from './components/CookieBanner';
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -34,12 +38,18 @@ export default function App() {
 
         {/* Main Content Sections */}
         <main id="main-content" className="flex-1 overflow-x-clip w-full relative">
-          <HeroSection />
-          <FlavoursGrid />
-          <NutritionalFacts />
+          <CoconutHero />
+          <PureCoconutSection />
+          <ExploreFlavoursSection />
+          <YouDeserveSection />
+          <SippersSaySection />
           <BoxOfHealth />
+          <NutritionalFacts />
           <Footer />
         </main>
+
+        {/* Cookie Consent Floating Pill */}
+        <CookieBanner />
       </div>
     </CartProvider>
   );

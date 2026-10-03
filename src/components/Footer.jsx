@@ -52,23 +52,23 @@ export default function Footer() {
 
           {/* Large PALMO Background Typography & Palm Trees */}
           <div className="relative mt-[2vw] max-md:mt-[4vw] h-[28vw] max-md:h-[52vw] pointer-events-none">
-            <div className="pointer-events-none z-10 absolute inset-x-0 bottom-0 h-full">
-              {/* Left Palm Tree */}
+            <div className="z-10 absolute inset-x-0 bottom-0 h-full pointer-events-none">
+              {/* Left Palm Tree - Interactive Hover Sway & Bounce */}
               <div
-                className="absolute top-[5vw] max-md:top-[-48vw] left-[-3vw] max-md:left-[-16vw] rotate-30 max-md:rotate-35 h-[22vw] w-[22vw] max-md:h-[46vw] max-md:w-[46vw] -scale-x-100 opacity-80"
-                aria-hidden="true"
+                className="group/palm-left absolute top-[5vw] max-md:top-[-48vw] left-[-3vw] max-md:left-[-16vw] rotate-30 max-md:rotate-35 h-[22vw] w-[22vw] max-md:h-[46vw] max-md:w-[46vw] -scale-x-100 opacity-80 pointer-events-auto cursor-pointer transition-all duration-700 ease-out hover:-translate-y-[2vw] hover:rotate-[38deg] hover:scale-108 active:translate-y-[1vw]"
+                aria-label="Interactive Left Palm Tree"
               >
-                <svg viewBox="0 0 554 588" fill="none" className="block h-full w-full overflow-visible">
+                <svg viewBox="0 0 554 588" fill="none" className="block h-full w-full overflow-visible transition-transform duration-500 group-hover/palm-left:scale-105">
                   <path d="M276.9 249.322L245.035 358.522L218.104 349.667L239.372 377.927L200.966 509.509 C167.804 469.088 154.52 411.898 170.563 356.94C186.604 301.952 228.007 262.772 276.9 249.322Z M103.415 207.766C157.405 181.329 218.871 187.303 273.502 218.22L111.253 297.676L93.7865 257.119 L90.1138 308.033L2.44079e-05 352.169C13.6111 287.814 49.4243 234.204 103.415 207.766Z M208.565 116.324L163.197 142.072L124.48 120.504L144.267 80.4888L98.9187 106.247L18.5067 61.4334 C67.6015 24.6383 133.909 17.6759 190.768 49.3588C247.628 81.052 279.895 142.964 279.238 206.757 L188.778 156.327L208.565 116.324Z M396.393 62.3739L422.723 91.8752L302.498 212.828C288.192 156.793 303.813 92.8834 347.994 48.4469 C392.172 4.00119 453.144 -9.11952 505.07 9.05494L442.601 71.8976L396.393 62.3739Z M453.656 172.446C505.236 188.06 541.998 231.991 553.217 283.818L494.986 266.187L485.685 236.307 L478.98 261.357L426.871 245.588L416.035 210.724L408.197 239.944L313.736 211.373 C349.017 173.619 402.059 156.851 453.656 172.446Z M291.272 233.752L312.996 223.029C391.719 410.788 337.783 853.463 337.783 853.463L267.028 820.022 C325.93 605.308 299.765 276.926 291.272 233.752Z" fill="#FFE386" />
                 </svg>
               </div>
 
-              {/* Right Palm Tree */}
+              {/* Right Palm Tree - Interactive Hover Sway & Bounce */}
               <div
-                className="absolute top-[1vw] max-md:top-[-52vw] right-[-2vw] max-md:right-[-14vw] -rotate-35 max-md:-rotate-35 h-[24vw] w-[24vw] max-md:h-[48vw] max-md:w-[48vw] opacity-80"
-                aria-hidden="true"
+                className="group/palm-right absolute top-[1vw] max-md:top-[-52vw] right-[-2vw] max-md:right-[-14vw] -rotate-35 max-md:-rotate-35 h-[24vw] w-[24vw] max-md:h-[48vw] max-md:w-[48vw] opacity-80 pointer-events-auto cursor-pointer transition-all duration-700 ease-out hover:-translate-y-[2vw] hover:-rotate-[42deg] hover:scale-108 active:translate-y-[1vw]"
+                aria-label="Interactive Right Palm Tree"
               >
-                <svg viewBox="0 0 554 588" fill="none" className="block h-full w-full overflow-visible">
+                <svg viewBox="0 0 554 588" fill="none" className="block h-full w-full overflow-visible transition-transform duration-500 group-hover/palm-right:scale-105">
                   <path d="M276.9 249.322L245.035 358.522L218.104 349.667L239.372 377.927L200.966 509.509 C167.804 469.088 154.52 411.898 170.563 356.94C186.604 301.952 228.007 262.772 276.9 249.322Z M103.415 207.766C157.405 181.329 218.871 187.303 273.502 218.22L111.253 297.676L93.7865 257.119 L90.1138 308.033L2.44079e-05 352.169C13.6111 287.814 49.4243 234.204 103.415 207.766Z M208.565 116.324L163.197 142.072L124.48 120.504L144.267 80.4888L98.9187 106.247L18.5067 61.4334 C67.6015 24.6383 133.909 17.6759 190.768 49.3588C247.628 81.052 279.895 142.964 279.238 206.757 L188.778 156.327L208.565 116.324Z M396.393 62.3739L422.723 91.8752L302.498 212.828C288.192 156.793 303.813 92.8834 347.994 48.4469 C392.172 4.00119 453.144 -9.11952 505.07 9.05494L442.601 71.8976L396.393 62.3739Z M453.656 172.446C505.236 188.06 541.998 231.991 553.217 283.818L494.986 266.187L485.685 236.307 L478.98 261.357L426.871 245.588L416.035 210.724L408.197 239.944L313.736 211.373 C349.017 173.619 402.059 156.851 453.656 172.446Z M291.272 233.752L312.996 223.029C391.719 410.788 337.783 853.463 337.783 853.463L267.028 820.022 C325.93 605.308 299.765 276.926 291.272 233.752Z" fill="#FFE386" />
                 </svg>
               </div>

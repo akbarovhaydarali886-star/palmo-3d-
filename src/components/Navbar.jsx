@@ -6,11 +6,31 @@ export default function Navbar() {
   const { count, openCart } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isDarkNavbar, setIsDarkNavbar] = useState(false);
 
   const overlayRef = useRef(null);
   const linksContainerRef = useRef(null);
   const sayHelloRef = useRef(null);
   const badgeRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const darkSections = document.querySelectorAll('[data-navbar-theme="dark"]');
+      let overDark = false;
+      const navY = 50;
+      darkSections.forEach((sec) => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= navY && rect.bottom >= navY) {
+          overDark = true;
+        }
+      });
+      setIsDarkNavbar(overDark);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (count > 0 && badgeRef.current) {
@@ -89,7 +109,9 @@ export default function Navbar() {
         <a
           href="#top"
           aria-label="Home"
-          className="size-[4vw] max-md:size-11 flex items-center justify-center transition-colors duration-500 text-foreground hover:scale-105"
+          className={`size-[4vw] max-md:size-11 flex items-center justify-center transition-colors duration-500 hover:scale-105 ${
+            isDarkNavbar ? 'text-[#FFE386]' : 'text-foreground'
+          }`}
         >
           <svg
             viewBox="0 0 554 588"
@@ -145,7 +167,11 @@ export default function Navbar() {
             type="button"
             aria-label="Open basket"
             onClick={openCart}
-            className="rounded-md relative size-[2.5vw] max-md:size-10 flex items-center justify-center p-[0.45vw] max-md:p-2 cursor-pointer transition-all duration-300 active:scale-90 bg-foreground text-light-beige hover:bg-light-beige hover:text-foreground shadow-md"
+            className={`rounded-md relative size-[2.5vw] max-md:size-10 flex items-center justify-center p-[0.45vw] max-md:p-2 cursor-pointer transition-all duration-300 active:scale-90 shadow-md ${
+              isDarkNavbar
+                ? 'bg-[#FFE386] text-[#463721] hover:bg-white'
+                : 'bg-foreground text-light-beige hover:bg-light-beige hover:text-foreground'
+            }`}
           >
             <svg
               viewBox="0 0 24 24"
@@ -174,7 +200,11 @@ export default function Navbar() {
             aria-expanded={menuOpen}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMenuOpen(!menuOpen)}
-            className="text36 relative px-[2vw] py-[.3vw] max-md:px-5 max-md:py-2 font-patrick-hand rounded-md cursor-pointer overflow-hidden transition-colors duration-300 bg-foreground text-light-beige hover:bg-opacity-95 shadow-md"
+            className={`text36 relative px-[2vw] py-[.3vw] max-md:px-5 max-md:py-2 font-patrick-hand rounded-md cursor-pointer overflow-hidden transition-colors duration-300 shadow-md ${
+              isDarkNavbar
+                ? 'bg-[#FFE386] text-[#463721] hover:bg-[#ffe89c]'
+                : 'bg-foreground text-light-beige hover:bg-opacity-95'
+            }`}
           >
             <span className="grid">
               <span

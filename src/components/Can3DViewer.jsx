@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import gsap from 'gsap';
 
 export default function Can3DViewer({
   textureUrl,
@@ -11,6 +12,17 @@ export default function Can3DViewer({
   const mountRef = useRef(null);
   const hoveredRef = useRef(isHovered);
   hoveredRef.current = isHovered;
+  const spinYRef = useRef({ value: 0 });
+
+  useEffect(() => {
+    if (isHovered) {
+      gsap.to(spinYRef.current, {
+        value: spinYRef.current.value + Math.PI * 2,
+        duration: 0.85,
+        ease: 'power2.out',
+      });
+    }
+  }, [isHovered]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -227,6 +239,8 @@ export default function Can3DViewer({
     let clock = new THREE.Clock();
     let currentScale = 1;
 
+    let lastSpinY = 0;
+
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
@@ -242,6 +256,11 @@ export default function Can3DViewer({
 
       // Floating gentle bobbing
       canGroup.position.y = Math.sin(elapsedTime * 1.8) * 0.06;
+
+      // Dynamic hover 360 spin delta
+      const deltaSpin = spinYRef.current.value - lastSpinY;
+      lastSpinY = spinYRef.current.value;
+      canGroup.rotation.y += deltaSpin;
 
       // Base idle continuous rotation (slightly faster on hover) + mouse interaction
       const spinSpeed = isHov ? 0.012 : 0.006;
