@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Khand:wght@400;500;600;700&family=Patrick+Hand&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8f8f0;
+  --foreground: #463721;
+  --beige: #ffe386;
+  --light-beige: #ece2b1;
+  --light-brown: #684900;
+  --gold: #b9902e;
+  --font-inter: 'Inter', sans-serif;
+  --font-khand: 'Khand', sans-serif;
+  --font-patrick-hand: 'Patrick Hand', cursive;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: clip;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  font-size: 1.04167vw;
+}
+
+::selection {
+  background-color: var(--beige);
+  color: var(--foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.paddx {
+  padding-inline: 3vw;
+}
+
+.text180 {
+  letter-spacing: -0.05em;
+  font-size: 9rem;
+  line-height: 85%;
+  font-family: var(--font-khand);
+  font-weight: 600;
+}
+
+.text150 {
+  letter-spacing: -0.05em;
+  font-size: 8vw;
+  line-height: 85%;
+  font-family: var(--font-khand);
+  font-weight: 600;
+}
+
+.text52 {
+  letter-spacing: -0.04em;
+  font-size: 2.2rem;
+  line-height: 90%;
+}
+
+.text36 {
+  letter-spacing: -0.04em;
+  font-size: 1.45rem;
+  line-height: 120%;
+}
+
+.text32 {
+  letter-spacing: -0.04em;
+  font-size: 1.3rem;
+  line-height: 130%;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 3.90625vw;
+  }
+  .paddx {
+    padding-inline: 5vw;
+  }
+  .text180 {
+    font-size: 4.5rem;
+  }
+  .text150 {
+    font-size: 3.5rem;
+  }
+  .text52 {
+    font-size: 1.75rem;
+  }
+  .text36 {
+    font-size: 1.15rem;
+  }
+  .text32 {
+    font-size: 1.05rem;
+  }
+  [data-menu-link] {
+    font-size: min(19vw, 11vh) !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1025px) {
+  html {
+    font-size: 2.86458vw;
+  }
+  .paddx {
+    padding-inline: 5vw;
+  }
+  .text180 {
+    font-size: 4.5rem;
+  }
+  .text150 {
+    font-size: 3.5rem;
+  }
+  .text52 {
+    font-size: 1.75rem;
+  }
+  .text36 {
+    font-size: 1.15rem;
+  }
+  .text32 {
+    font-size: 1.05rem;
+  }
+  [data-menu-link] {
+    font-size: min(19vw, 11vh) !important;
+  }
+}
+
+@keyframes loaderCurtainLeft {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes loaderCurtainRight {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+/* Custom cursor for slicing */
+.cursor-blade {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffe386" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5-8 8a2.119 2.119 0 0 1-3-3l8-8"/><path d="m16 8 2-2"/><path d="M9.5 14.5 16 8"/></svg>') 12 12, crosshair;
+}
